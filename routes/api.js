@@ -34,7 +34,24 @@ module.exports = function(app) {
     .route('/api/issues/:project')
     // GET REQUEST
     .get(async function(req, res) {
-      await Project.find({}, (err, projects) => {
+      const {
+        issue_title,
+        issue_text,
+        created_by,
+        assigned_to,
+        status_text,
+        open
+      } = req.body;
+      const filter = {};
+
+      if (issue_title) filter.issue_title = issue_title;
+      if (issue_text) filter.issue_text = issue_text;
+      if (created_by) filter.created_by = created_by;
+      if (assigned_to) filter.assigned_to = assigned_to;
+      if (status_text) filter.status_text = status_text;
+      if (open) filter.open = open;
+
+      await Project.find(filter, (err, projects) => {
         if (err) throw err;
         res.send(projects);
       });
@@ -50,6 +67,14 @@ module.exports = function(app) {
         assigned_to,
         status_text
       } = req.body;
+
+      let count = 0;
+
+      if (issue_title) count++;
+      if (issue_text) count++;
+      if (created_by) count++;
+      if (count < 3) return res.send('must fill in all required');
+
       const newProject = new Project({
         issue_title,
         issue_text,
@@ -87,8 +112,6 @@ module.exports = function(app) {
         status_text
       } = req.body;
 
-      console.log(req.body);
-
       try {
         // Learn thix hsist
         // const theProject = await Project.findByIdAndUpdate(req.body._id, { $set: {
@@ -114,8 +137,8 @@ module.exports = function(app) {
             (item.created_by = created_by || item.created_by),
             (item.assigned_to = assigned_to || item.assigned_to),
             (item.status_text = status_text || item.status_text),
-            (item.updated_on = Date.now());
-          item.open = req.body.open || true;
+            (item.open = req.body.open || item.open);
+          item.updated_on = Date.now();
           item.save();
 
           res.send('successfully updated');
